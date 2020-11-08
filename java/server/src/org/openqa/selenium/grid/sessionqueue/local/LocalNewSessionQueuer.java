@@ -41,8 +41,10 @@ public class LocalNewSessionQueuer extends NewSessionQueuer {
   private final EventBus bus;
   public final NewSessionQueue sessionRequests;
 
-  public LocalNewSessionQueuer(Tracer tracer, EventBus bus,
-                               NewSessionQueue sessionRequests) {
+  public LocalNewSessionQueuer(
+    Tracer tracer,
+    EventBus bus,
+    NewSessionQueue sessionRequests) {
     super(tracer);
     this.bus = Require.nonNull("Event bus", bus);
     this.sessionRequests = Require.nonNull("New Session Request Queue", sessionRequests);
@@ -75,8 +77,8 @@ public class LocalNewSessionQueuer extends NewSessionQueuer {
   }
 
   @Override
-  public Optional<HttpRequest> remove() {
-    return sessionRequests.poll();
+  public Optional<HttpRequest> remove(RequestId id) {
+    return sessionRequests.remove(id);
   }
 
   @Override

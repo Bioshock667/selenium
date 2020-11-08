@@ -86,9 +86,7 @@ import static org.openqa.selenium.grid.data.Availability.UP;
 import static org.openqa.selenium.grid.node.CapabilityResponseEncoder.getEncoder;
 import static org.openqa.selenium.remote.HttpSessionId.getSessionId;
 import static org.openqa.selenium.remote.RemoteTags.CAPABILITIES;
-import static org.openqa.selenium.remote.RemoteTags.CAPABILITIES_EVENT;
 import static org.openqa.selenium.remote.RemoteTags.SESSION_ID;
-import static org.openqa.selenium.remote.RemoteTags.SESSION_ID_EVENT;
 import static org.openqa.selenium.remote.http.Contents.asJson;
 import static org.openqa.selenium.remote.http.Contents.string;
 import static org.openqa.selenium.remote.http.HttpMethod.DELETE;
@@ -128,7 +126,7 @@ public class LocalNode extends Node {
     this.gridUri = Require.nonNull("Grid URI", gridUri);
     this.maxSessionCount = Math.min(Require.positive("Max session count", maxSessionCount), factories.size());
     this.factories = ImmutableList.copyOf(factories);
-    this.registrationSecret = registrationSecret;
+    this.registrationSecret = Require.nonNull("Registration secret", registrationSecret);
 
     this.healthCheck = healthCheck == null ?
       () -> new HealthCheck.Result(
@@ -436,8 +434,7 @@ public class LocalNode extends Node {
       externalUri,
       maxSessionCount,
       slots,
-      isDraining() ? DRAINING : UP,
-      registrationSecret);
+      isDraining() ? DRAINING : UP);
   }
 
   @Override
@@ -491,7 +488,7 @@ public class LocalNode extends Node {
     private Duration sessionTimeout = Duration.ofMinutes(5);
     private HealthCheck healthCheck;
 
-    public Builder(
+    private Builder(
       Tracer tracer,
       EventBus bus,
       URI uri,
@@ -501,7 +498,7 @@ public class LocalNode extends Node {
       this.bus = Require.nonNull("Event bus", bus);
       this.uri = Require.nonNull("Remote node URI", uri);
       this.gridUri = Require.nonNull("Grid URI", gridUri);
-      this.registrationSecret = registrationSecret;
+      this.registrationSecret = Require.nonNull("Registration secret", registrationSecret);
       this.factories = ImmutableList.builder();
     }
 

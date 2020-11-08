@@ -3,8 +3,8 @@ load("@rules_jvm_external//:specs.bzl", "maven")
 
 def selenium_java_deps():
     jetty_version = "9.4.31.v20200723"
-    netty_version = "4.1.52.Final"
-    opentelemetry_version = "0.8.0"
+    netty_version = "4.1.53.Final"
+    opentelemetry_version = "0.9.1"
 
     maven_install(
         artifacts = [
@@ -12,7 +12,7 @@ def selenium_java_deps():
             "com.github.javaparser:javaparser-core:3.16.1",
             "com.github.spotbugs:spotbugs:4.1.3",
             "com.google.code.gson:gson:2.8.6",
-            "com.google.guava:guava:29.0-jre",
+            "com.google.guava:guava:30.0-jre",
             "com.google.auto:auto-common:0.11",
             "com.google.auto.service:auto-service:1.0-rc7",
             "com.google.auto.service:auto-service-annotations:1.0-rc7",
@@ -42,9 +42,9 @@ def selenium_java_deps():
             "io.opentelemetry:opentelemetry-sdk-tracing:%s" % opentelemetry_version,
             "io.ous:jtoml:2.0.0",
             "it.ozimov:embedded-redis:0.7.3",
-            "io.projectreactor:reactor-core:3.4.0-RC1",
-            "io.projectreactor.netty:reactor-netty:1.0.0-RC1",
-            "io.projectreactor.netty:reactor-netty-http:1.0.0-RC1",
+            "io.projectreactor:reactor-core:3.4.0",
+            "io.projectreactor.netty:reactor-netty:1.0.0",
+            "io.projectreactor.netty:reactor-netty-http:1.0.0",
             "javax.servlet:javax.servlet-api:4.0.1",
             maven.artifact(
                 group = "junit",
@@ -56,9 +56,9 @@ def selenium_java_deps():
                     "org.hamcrest:hamcrest-library",
                 ],
             ),
-            "net.bytebuddy:byte-buddy:1.10.14",
+            "net.bytebuddy:byte-buddy:1.10.18",
             "net.jodah:failsafe:2.4.0",
-            "net.sourceforge.htmlunit:htmlunit-core-js:2.43.0",
+            "net.sourceforge.htmlunit:htmlunit-core-js:2.44.0",
             "org.apache.commons:commons-exec:1.3",
             "org.assertj:assertj-core:3.17.2",
             "org.asynchttpclient:async-http-client:2.12.1",
@@ -97,9 +97,6 @@ def selenium_java_deps():
             "https://jcenter.bintray.com/",
             "https://repo1.maven.org/maven2",
             "https://maven.google.com",
-
-            # Remove these once reactor m1 is released
-            "https://repo.spring.io/libs-snapshot",
         ],
         maven_install_json = "@selenium//java:maven_install.json",
     )

@@ -31,7 +31,6 @@ import org.openqa.selenium.grid.data.DistributorStatus;
 import org.openqa.selenium.grid.data.NodeAddedEvent;
 import org.openqa.selenium.grid.data.NodeDrainComplete;
 import org.openqa.selenium.grid.data.NodeId;
-import org.openqa.selenium.grid.data.NodeRejectedEvent;
 import org.openqa.selenium.grid.data.NodeRemovedEvent;
 import org.openqa.selenium.grid.data.NodeStatus;
 import org.openqa.selenium.grid.data.NodeStatusEvent;
@@ -44,7 +43,7 @@ import org.openqa.selenium.grid.node.HealthCheck;
 import org.openqa.selenium.grid.node.Node;
 import org.openqa.selenium.grid.node.remote.RemoteNode;
 import org.openqa.selenium.grid.security.Secret;
-import org.openqa.selenium.grid.server.BaseServerOptions;
+import org.openqa.selenium.grid.security.SecretOptions;
 import org.openqa.selenium.grid.server.EventBusOptions;
 import org.openqa.selenium.grid.server.NetworkOptions;
 import org.openqa.selenium.grid.sessionmap.SessionMap;
@@ -59,7 +58,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -81,6 +79,7 @@ public class LocalDistributor extends Distributor {
   private final EventBus bus;
   private final HttpClient.Factory clientFactory;
   private final SessionMap sessions;
+  private final Secret registrationSecret;
   private final Regularly hostChecker = new Regularly("distributor host checker");
   private final Map<NodeId, Runnable> allChecks = new HashMap<>();
 
@@ -99,11 +98,13 @@ public class LocalDistributor extends Distributor {
     this.bus = Require.nonNull("Event bus", bus);
     this.clientFactory = Require.nonNull("HTTP client factory", clientFactory);
     this.sessions = Require.nonNull("Session map", sessions);
-    this.model = new GridModel(bus, registrationSecret);
+    this.model = new GridModel(bus);
     this.nodes = new HashMap<>();
 
-    bus.addListener(NodeStatusEvent.listener(status -> register(registrationSecret, status)));
-    bus.addListener(NodeStatusEvent.listener(status -> model.refresh(registrationSecret, status)));
+    this.registrationSecret = Require.nonNull("Registration secret", registrationSecret);
+
+    bus.addListener(NodeStatusEvent.listener(this::register));
+    bus.addListener(NodeStatusEvent.listener(model::refresh));
     bus.addListener(NodeDrainComplete.listener(this::remove));
   }
 
@@ -112,9 +113,9 @@ public class LocalDistributor extends Distributor {
     EventBus bus = new EventBusOptions(config).getEventBus();
     HttpClient.Factory clientFactory = new NetworkOptions(config).getHttpClientFactory(tracer);
     SessionMap sessions = new SessionMapOptions(config).getSessionMap();
-    BaseServerOptions serverOptions = new BaseServerOptions(config);
+    SecretOptions secretOptions = new SecretOptions(config);
 
-    return new LocalDistributor(tracer, bus, clientFactory, sessions, serverOptions.getRegistrationSecret());
+    return new LocalDistributor(tracer, bus, clientFactory, sessions, secretOptions.getRegistrationSecret());
   }
 
   @Override
@@ -128,15 +129,8 @@ public class LocalDistributor extends Distributor {
     }
   }
 
-  private void register(Secret registrationSecret, NodeStatus status) {
+  private void register(NodeStatus status) {
     Require.nonNull("Node", status);
-
-    Secret nodeSecret = status.getRegistrationSecret() == null ? null : new Secret(status.getRegistrationSecret());
-    if (!Objects.equals(registrationSecret, nodeSecret)) {
-      LOG.severe(String.format("Node at %s failed to send correct registration secret. Node NOT registered.", status.getUri()));
-      bus.fire(new NodeRejectedEvent(status.getUri()));
-      return;
-    }
 
     Lock writeLock = lock.writeLock();
     writeLock.lock();

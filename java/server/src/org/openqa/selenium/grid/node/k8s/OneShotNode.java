@@ -43,6 +43,7 @@ import org.openqa.selenium.grid.node.HealthCheck;
 import org.openqa.selenium.grid.node.Node;
 import org.openqa.selenium.grid.node.config.NodeOptions;
 import org.openqa.selenium.grid.security.Secret;
+import org.openqa.selenium.grid.security.SecretOptions;
 import org.openqa.selenium.grid.server.BaseServerOptions;
 import org.openqa.selenium.grid.server.EventBusOptions;
 import org.openqa.selenium.internal.Require;
@@ -88,7 +89,6 @@ public class OneShotNode extends Node {
   private final EventBus events;
   private final WebDriverInfo driverInfo;
   private final Capabilities stereotype;
-  private final Secret registrationSecret;
   private final URI gridUri;
   private final UUID slotId = UUID.randomUUID();
   private RemoteWebDriver driver;
@@ -108,7 +108,6 @@ public class OneShotNode extends Node {
     WebDriverInfo driverInfo) {
     super(tracer, id, uri, registrationSecret);
 
-    this.registrationSecret = registrationSecret;
     this.events = Require.nonNull("Event bus", events);
     this.gridUri = Require.nonNull("Public Grid URI", gridUri);
     this.stereotype = ImmutableCapabilities.copyOf(Require.nonNull("Stereotype", stereotype));
@@ -119,6 +118,7 @@ public class OneShotNode extends Node {
     LoggingOptions loggingOptions = new LoggingOptions(config);
     EventBusOptions eventOptions = new EventBusOptions(config);
     BaseServerOptions serverOptions = new BaseServerOptions(config);
+    SecretOptions secretOptions = new SecretOptions(config);
     NodeOptions nodeOptions = new NodeOptions(config);
 
     Map<String, Object> raw = new Json().toType(
@@ -144,7 +144,7 @@ public class OneShotNode extends Node {
     return new OneShotNode(
       loggingOptions.getTracer(),
       eventOptions.getEventBus(),
-      serverOptions.getRegistrationSecret(),
+      secretOptions.getRegistrationSecret(),
       new NodeId(UUID.randomUUID()),
       serverOptions.getExternalUri(),
       nodeOptions.getPublicGridUri().orElseThrow(() -> new ConfigException("Unable to determine public grid address")),
@@ -344,8 +344,7 @@ public class OneShotNode extends Node {
           driver == null ?
             Optional.empty() :
             Optional.of(new Session(sessionId, getUri(), stereotype, capabilities, Instant.now())))),
-      isDraining() ? DRAINING : UP,
-      registrationSecret);
+      isDraining() ? DRAINING : UP);
   }
 
   @Override

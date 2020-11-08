@@ -4,7 +4,6 @@ services:
 env:
   global:
     - PYTEST_ADDOPTS="--verbose --instafail"
-    - FF_ESR_BINARY=$HOME/firefox-52.9.0esr/firefox/firefox-bin
     - FF_NIGHTLY_BINARY=$HOME/firefox-latest-nightly/firefox/firefox-bin
 git:
   depth: 10
@@ -36,9 +35,6 @@ _browsers:
   firefox: &firefox-latest
     addons:
       firefox: latest
-  firefox-esr: &firefox-esr
-    addons:
-      firefox: "52.9.0esr"
   firefox-nightly: &firefox-nightly
     addons:
       firefox: latest-nightly
@@ -67,12 +63,14 @@ matrix:
       <<: *firefox-latest
     - env: BZL="build //java/..." SONAR=1
       <<: *java
-    - env: BZL="test --test_size_filters=small //java/..."
+    - env: BZL_TEST="attr(size, small, tests(//java/...)) except attr(tags, lint, tests(//java/...))"
       <<: *java
-    - env: MARIONETTE=1 BZL="test --test_tag_filters=firefox //java/..."
+    - env: BZL_TEST="attr(tags, lint, tests(//java/...))"
+      <<: *java
+    - env: MARIONETTE=1 BZL_TEST="attr(tags, firefox, tests(//java/client/...)) except attr(tags, remote, tests(//java/client/...))"
       <<: *java
       <<: *firefox-nightly
-    - env: CHROME=1 BZL="test --test_tag_filters=chrome //java/..."
+    - env: CHROME=1 BZL_TEST="attr(tags, chrome, tests(//java/client/...)) except attr(tags, remote, tests(//java/client/...))"
       <<: *java
       <<: *chrome
     - env: MARIONETTE=1 MOZ_HEADLESS=1 BZL="test --test_tag_filters=firefox //javascript/atoms/... //javascript/selenium-atoms/... //javascript/webdriver/..."
@@ -81,6 +79,9 @@ matrix:
     - env: CHROME=1 BZL="test --test_tag_filters=chrome //javascript/atoms/... //javascript/selenium-atoms/... //javascript/webdriver/...  //javascript/chrome-driver/..."
       <<: *java
       <<: *chrome
+    - env: CHROME=1 MARIONETTE=1 BZL_TEST="tests(//java/server/...) except attr(tags, 'lint|ie|edge|edgehtml|safari', tests(//java/server/...))"
+      <<: *java
+      <<: *firefox-nightly
     - env: TASK=javadocs
       <<: *java
     - env: TOXENV=flake8
@@ -127,7 +128,7 @@ matrix:
       <<: *ruby
 install: ./scripts/travis/install.sh
 before_script: ./scripts/travis/before_script.sh
-script: travis_wait 40 ./scripts/travis/script.sh
+script: travis_wait 60 ./scripts/travis/script.sh
 
 notifications:
   email: false
