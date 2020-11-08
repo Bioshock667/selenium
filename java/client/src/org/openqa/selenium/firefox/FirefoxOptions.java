@@ -278,27 +278,45 @@ public class FirefoxOptions extends AbstractDriverOptions<FirefoxOptions> {
   @Override
   public Map<String, Object> asMap() {
     Map<String, Object> toReturn = new HashMap<>(super.asMap());
-
+    Map<String, Object> oldOptions = null;
+    if(toReturn.containsKey(FIREFOX_OPTIONS)){
+      oldOptions = (Map<String,Object>) toReturn.get(FIREFOX_OPTIONS);
+    }
     ImmutableSortedMap.Builder<String, Object> w3cOptions = ImmutableSortedMap.naturalOrder();
-    w3cOptions.put("args", unmodifiableList(new ArrayList<>(args)));
+    if(!args.isEmpty()) {
+      w3cOptions.put("args", unmodifiableList(new ArrayList<>(args)));
+    } else if(oldOptions != null && oldOptions.containsKey("args")){
+      w3cOptions.put("args", oldOptions.get("args"));
+    }
 
     if (binary != null) {
       w3cOptions.put("binary", binary.asPath());
+    } else if(oldOptions != null && oldOptions.containsKey("binary")){
+      w3cOptions.put("binary", oldOptions.get("binary"));
     }
 
     if (logLevel != null) {
       w3cOptions.put("log", singletonMap("level", logLevel));
+    } else if (oldOptions != null && oldOptions.containsKey("log")){
+      w3cOptions.put("log", oldOptions.get("log"));
     }
 
     if (profile != null) {
       preferences.forEach(profile::setPreference);
       try {
         w3cOptions.put("profile", profile.toJson());
+        if(oldOptions != null && oldOptions.containsKey("profile")){
+          w3cOptions.put("profile",oldOptions.get("profile"));
+        }
       } catch (IOException e) {
         throw new WebDriverException(e);
       }
     } else {
-      w3cOptions.put("prefs", unmodifiableMap(new HashMap<>(preferences)));
+      if(!preferences.isEmpty()) {
+        w3cOptions.put("prefs", unmodifiableMap(new HashMap<>(preferences)));
+      } else if(oldOptions != null && oldOptions.containsKey("prefs")){
+        w3cOptions.put("prefs", oldOptions.get("prefs"));
+      }
     }
 
     toReturn.put(FIREFOX_OPTIONS, w3cOptions.build());

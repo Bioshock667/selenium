@@ -211,30 +211,40 @@ public class ChromiumOptions<T extends ChromiumOptions> extends AbstractDriverOp
   @Override
   public Map<String, Object> asMap() {
     Map<String, Object> toReturn = new TreeMap<>(super.asMap());
-
-    Map<String, Object> options = new TreeMap<>();
+    Map<String, Object> options;
+    if(toReturn.containsKey(CAPABILITY) && toReturn.get(CAPABILITY) instanceof Map){
+      options = new TreeMap<>((Map<String,Object>) toReturn.get(CAPABILITY));
+    } else {
+      options = new TreeMap<>();
+    }
     experimentalOptions.forEach(options::put);
 
     if (binary != null) {
       options.put("binary", binary);
     }
-
-    options.put("args", unmodifiableList(new ArrayList<>(args)));
-
-    options.put(
-        "extensions",
-        unmodifiableList(Stream.concat(
-            extensionFiles.stream()
-                .map(file -> {
-                  try {
-                    return Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
-                  } catch (IOException e) {
-                    throw new SessionNotCreatedException(e.getMessage(), e);
-                  }
-                }),
-            extensions.stream()
-        ).collect(toList())));
-
+  //combine collections in returned map without overwriting by checking if collections are empty
+    if(!args.isEmpty()){
+      options.put("args", unmodifiableList(new ArrayList<>(args)));
+    }
+    List<String> oldExtensions = new ArrayList<>();
+    if(options.containsKey("extensions") && options.get("extensions") instanceof List){
+      oldExtensions.addAll((List<String>)options.get("extensions"));
+    }
+    if(!extensions.isEmpty() || !extensionFiles.isEmpty()) {
+      options.put(
+          "extensions",
+          unmodifiableList(Stream.concat(oldExtensions.stream(), Stream.concat(
+              extensionFiles.stream()
+                  .map(file -> {
+                    try {
+                      return Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
+                    } catch (IOException e) {
+                      throw new SessionNotCreatedException(e.getMessage(), e);
+                    }
+                  }),
+              extensions.stream()
+          )).collect(toList())));
+    }
     toReturn.put(CAPABILITY, unmodifiableMap(options));
 
     return unmodifiableMap(toReturn);
